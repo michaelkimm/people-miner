@@ -1,0 +1,113 @@
+import { Injectable } from '@nestjs/common';
+import {
+  ScoringStrategy,
+  StrategyScore,
+  CandidateWithRelations,
+} from './scoring-strategy.interface';
+
+@Injectable()
+export class ActivityStrategy implements ScoringStrategy {
+  readonly name = 'activity';
+  readonly description = 'Scores based on GitHub activity: repos, commits, contributions';
+  readonly defaultWeight = 0.25;
+
+  async calculate(candidate: CandidateWithRelations): Promise<StrategyScore> {
+    const breakdown: Record<string, number> = {};
+
+    const repoScore = this.scoreRepositoryCount(candidate.publicRepos);
+    breakdown.repositories = repoScore;
+
+    const repoQualityScore = this.scoreRepositoryQuality(candidate.repositories);
+    breakdown.repositoryQuality = repoQualityScore;
+
+    const languageDiversityScore = this.scoreLanguageDiversity(candidate.repositories);
+    breakdown.languageDiversity = languageDiversityScore;
+
+    const commitScore = this.scoreCommitActivity(candidate.totalCommits);
+    breakdown.commits = commitScore;
+
+    // TIL repository bonus
+    const tilBonus = this.scoreTilBonus(candidate.hasTilRepo, candidate.tilRepoCount);
+    breakdown.tilBonus = tilBonus;
+
+    // Long-term project bonus
+    const longTermBonus = this.scoreLongTermProject(candidate.longestProjectMonths);
+    breakdown.longTermBonus = longTermBonus;
+
+    const baseScore = Math.round(
+      repoScore * 0.25 +
+      repoQualityScore * 0.30 +
+      languageDiversityScore * 0.20 +
+      commitScore * 0.25
+    );
+
+    // Add bonuses (not weighted, direct addition)
+    const value = Math.min(baseScore + tilBonus + longTermBonus, 100);
+    return {
+      value: Math.min(value, 100),
+      breakdown,
+    };
+  }
+
+  private scoreRepositoryCount(count: number): number {
+    if (count >= 50) return 100;
+    if (count >= 30) return 85;
+    if (count >= 20) return 70;
+    if (count >= 10) return 55;
+    if (count >= 5) return 40;
+    return Math.max(count * 8, 0);
+  }
+
+  private scoreRepositoryQuality(repositories: CandidateWithRelations['repositories']): number {
+    if (repositories.length === 0) return 30;
+
+    let score = 40;
+
+    const withDescription = repositories.filter(r => r.description && r.description.length > 20);
+    score += Math.min((withDescription.length / repositories.length) * 30, 30);
+
+    const meaningfulNames = repositories.filter(r =>
+      r.name.length > 3 && !/^(test|demo|temp|tmp|untitled)/i.test(r.name)
+    );
+    score += Math.min((meaningfulNames.length / repositories.length) * 30, 30);
+
+    return Math.min(score, 100);
+  }
+
+  private scoreLanguageDiversity(repositories: CandidateWithRelations['repositories']): number {
+    const languages = new Set(
+      repositories
+        .map(r => r.language)
+        .filter((lang): lang is string => lang !== null)
+    );
+
+    const count = languages.size;
+    if (count >= 5) return 100;
+    if (count >= 4) return 85;
+    if (count >= 3) return 70;
+    if (count >= 2) return 55;
+    if (count >= 1) return 40;
+    return 20;
+  }
+
+  private scoreCommitActivity(totalCommits: number): number {
+    if (totalCommits >= 1000) return 100;
+    if (totalCommits >= 500) return 85;
+    if (totalCommits >= 200) return 70;
+    if (totalCommits >= 100) return 55;
+    if (totalCommits >= 50) return 40;
+    return Math.max(30, Math.floor(totalCommits * 0.6));
+  }
+
+  private scoreTilBonus(hasTilRepo: boolean, tilRepoCount: number): number {
+    if (!hasTilRepo) return 0;
+    return tilRepoCount >= 2 ? 15 : 10;
+  }
+
+  private scoreLongTermProject(longestProjectMonths: number): number {
+    if (longestProjectMonths >= 12) return 20;
+    if (longestProjectMonths >= 6) return 15;
+    if (longestProjectMonths >= 3) return 10;
+    return 0;
+  }
+}

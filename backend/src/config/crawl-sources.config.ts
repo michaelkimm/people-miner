@@ -1,0 +1,860 @@
+import { SourceType } from '@prisma/client';
+
+/**
+ * 소스 카테고리 정의
+ */
+export enum SourceCategory {
+  // 교육 프로그램
+  BOOTCAMP = 'bootcamp', // 부트캠프 (부스트캠프, SSAFY 등)
+  UNIVERSITY_PROGRAM = 'university', // 대학 연계 (SW마에스트로, 42Seoul 등)
+
+  // 커뮤니티
+  IT_CLUB = 'it_club', // IT 동아리 (디프만, 넥스터즈 등)
+  UNIVERSITY_CLUB = 'univ_club', // 대학 동아리 (스팍스, 와플 등)
+
+  // 기업
+  TECH_GIANT = 'tech_giant', // 대기업 (네카라쿠배)
+  UNICORN = 'unicorn', // 유니콘/대형 스타트업
+  STARTUP = 'startup', // 스타트업
+
+  // 기타
+  OPEN_SOURCE = 'open_source', // 오픈소스 커뮤니티
+  CONFERENCE = 'conference', // 컨퍼런스/밋업
+  TECH_BLOG = 'tech_blog', // 기술 블로그
+}
+
+/**
+ * 소스 설정 인터페이스
+ */
+export interface CrawlSourceConfig {
+  name: string; // 고유 식별자
+  displayName: string; // UI 표시명
+  type: SourceType; // Prisma enum
+  category: SourceCategory; // 카테고리
+  url: string; // 소스 URL
+  config: Record<string, unknown>; // 크롤러별 설정
+  enabled: boolean; // 활성화 여부
+  priority: number; // 크롤링 우선순위 (낮을수록 먼저)
+  description?: string; // 설명
+  tags?: string[]; // 검색/필터용 태그
+  expectedCandidates?: number; // 예상 후보자 수 (참고용)
+}
+
+/**
+ * ============================================
+ * 교육 프로그램 소스
+ * ============================================
+ */
+export const BOOTCAMP_SOURCES: CrawlSourceConfig[] = [
+  // 네이버 부스트캠프 - 웹/모바일 (2024, 2025만 활성화)
+  {
+    name: 'boostcamp-web-2025',
+    displayName: '부스트캠프 웹/모바일 2025',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.BOOTCAMP,
+    url: 'https://github.com/boostcampwm2025',
+    config: { orgName: 'boostcampwm2025' },
+    enabled: true,
+    priority: 10,
+    description: '네이버 커넥트재단 웹/모바일 부트캠프',
+    tags: ['naver', 'web', 'mobile', 'bootcamp'],
+    expectedCandidates: 300,
+  },
+  {
+    name: 'boostcamp-web-2024',
+    displayName: '부스트캠프 웹/모바일 2024',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.BOOTCAMP,
+    url: 'https://github.com/boostcampwm-2024',
+    config: { orgName: 'boostcampwm-2024' },
+    enabled: true,
+    priority: 10,
+    tags: ['naver', 'web', 'mobile', 'bootcamp'],
+    expectedCandidates: 300,
+  },
+  // 네이버 부스트캠프 - AI Tech (6기, 7기만 활성화)
+  {
+    name: 'boostcamp-ai-7th',
+    displayName: '부스트캠프 AI Tech 7기',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.BOOTCAMP,
+    url: 'https://github.com/boostcampaitech7',
+    config: { orgName: 'boostcampaitech7' },
+    enabled: true,
+    priority: 10,
+    description: '네이버 커넥트재단 AI 부트캠프',
+    tags: ['naver', 'ai', 'ml', 'bootcamp'],
+    expectedCandidates: 200,
+  },
+  {
+    name: 'boostcamp-ai-6th',
+    displayName: '부스트캠프 AI Tech 6기',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.BOOTCAMP,
+    url: 'https://github.com/boostcampaitech6',
+    config: { orgName: 'boostcampaitech6' },
+    enabled: true,
+    priority: 10,
+    tags: ['naver', 'ai', 'ml', 'bootcamp'],
+    expectedCandidates: 200,
+  },
+
+  // 삼성 SSAFY
+  {
+    name: 'ssafy-10th',
+    displayName: 'SSAFY 10기',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.BOOTCAMP,
+    url: 'https://github.com/SSAFY-10th',
+    config: { orgName: 'SSAFY-10th' },
+    enabled: true,
+    priority: 10,
+    description: '삼성 청년 SW 아카데미',
+    tags: ['samsung', 'ssafy', 'bootcamp'],
+    expectedCandidates: 400,
+  },
+  {
+    name: 'ssafy-11th',
+    displayName: 'SSAFY 11기',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.BOOTCAMP,
+    url: 'https://github.com/SSAFY-11th',
+    config: { orgName: 'SSAFY-11th' },
+    enabled: true,
+    priority: 10,
+    tags: ['samsung', 'ssafy', 'bootcamp'],
+    expectedCandidates: 400,
+  },
+
+  // 우아한테크코스
+  {
+    name: 'woowacourse',
+    displayName: '우아한테크코스',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.BOOTCAMP,
+    url: 'https://github.com/woowacourse',
+    config: { orgName: 'woowacourse' },
+    enabled: true,
+    priority: 5,
+    description: '우아한형제들 개발자 양성 프로그램',
+    tags: ['woowahan', 'bootcamp', 'java', 'spring'],
+    expectedCandidates: 500,
+  },
+  {
+    name: 'woowacourse-teams',
+    displayName: '우아한테크코스 팀 프로젝트',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.BOOTCAMP,
+    url: 'https://github.com/woowacourse-teams',
+    config: { orgName: 'woowacourse-teams' },
+    enabled: true,
+    priority: 5,
+    tags: ['woowahan', 'bootcamp', 'team-project'],
+    expectedCandidates: 300,
+  },
+];
+
+export const UNIVERSITY_PROGRAM_SOURCES: CrawlSourceConfig[] = [
+  // SW 마에스트로 OSS (유일하게 활성화된 SWM 소스)
+  {
+    name: 'sw-maestro-oss',
+    displayName: 'SW마에스트로 OSS',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNIVERSITY_PROGRAM,
+    url: 'https://github.com/SW-Maestro-OSS',
+    config: { orgName: 'SW-Maestro-OSS' },
+    enabled: true,
+    priority: 10,
+    description: '과학기술정보통신부 SW 인재 양성 오픈소스',
+    tags: ['swm', 'government', 'elite', 'oss'],
+    expectedCandidates: 100,
+  },
+
+  // 42 Seoul - GitHub org 없음, 추후 repo search로 대체 필요
+  {
+    name: '42seoul',
+    displayName: '42 Seoul',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNIVERSITY_PROGRAM,
+    url: 'https://github.com/42Seoul',
+    config: { orgName: '42Seoul' },
+    enabled: false,
+    priority: 10,
+    description: '에꼴42 서울 캠퍼스 (GitHub org 없음 - disabled)',
+    tags: ['42', 'peer-learning', 'c', 'system'],
+    expectedCandidates: 200,
+  },
+];
+
+/**
+ * ============================================
+ * IT 동아리/커뮤니티 소스
+ * ============================================
+ */
+export const IT_CLUB_SOURCES: CrawlSourceConfig[] = [
+  {
+    name: 'depromeet',
+    displayName: '디프만 (Depromeet)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.IT_CLUB,
+    url: 'https://github.com/depromeet',
+    config: { orgName: 'depromeet' },
+    enabled: true,
+    priority: 10,
+    description: '디자이너와 프로그래머가 만났을 때',
+    tags: ['side-project', 'design', 'development'],
+    expectedCandidates: 300,
+  },
+  {
+    name: 'nexters',
+    displayName: 'Nexters',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.IT_CLUB,
+    url: 'https://github.com/Nexters',
+    config: { orgName: 'Nexters' },
+    enabled: true,
+    priority: 10,
+    description: 'IT 연합 동아리',
+    tags: ['side-project', 'it-club'],
+    expectedCandidates: 400,
+  },
+  {
+    name: 'dnd-side-project',
+    displayName: 'DND',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.IT_CLUB,
+    url: 'https://github.com/dnd-side-project',
+    config: { orgName: 'dnd-side-project' },
+    enabled: true,
+    priority: 10,
+    description: 'Developer & Designer',
+    tags: ['side-project', 'dnd'],
+    expectedCandidates: 300,
+  },
+  {
+    name: 'mash-up-kr',
+    displayName: 'Mash-Up',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.IT_CLUB,
+    url: 'https://github.com/mash-up-kr',
+    config: { orgName: 'mash-up-kr' },
+    enabled: true,
+    priority: 10,
+    description: 'IT 연합 동아리 Mash-Up',
+    tags: ['side-project', 'it-club'],
+    expectedCandidates: 300,
+  },
+  {
+    name: 'yapp-project',
+    displayName: 'YAPP',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.IT_CLUB,
+    url: 'https://github.com/YAPP-Github',
+    config: { orgName: 'YAPP-Github' },
+    enabled: true,
+    priority: 10,
+    description: 'Yet Another Programming Project',
+    tags: ['side-project', 'yapp'],
+    expectedCandidates: 400,
+  },
+  {
+    name: 'prography',
+    displayName: 'Prography',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.IT_CLUB,
+    url: 'https://github.com/prography',
+    config: { orgName: 'prography' },
+    enabled: true,
+    priority: 10,
+    description: 'IT 연합 동아리 프로그라피',
+    tags: ['side-project', 'prography'],
+    expectedCandidates: 250,
+  },
+  {
+    name: 'sopt-makers',
+    displayName: 'SOPT Makers',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.IT_CLUB,
+    url: 'https://github.com/sopt-makers',
+    config: { orgName: 'sopt-makers' },
+    enabled: true,
+    priority: 10,
+    description: 'SOPT 공식 프로덕트팀',
+    tags: ['sopt', 'makers'],
+    expectedCandidates: 100,
+  },
+
+  {
+    name: 'ausg',
+    displayName: 'AUSG (AWS University Student Group)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.IT_CLUB,
+    url: 'https://github.com/AUSG',
+    config: { orgName: 'AUSG' },
+    enabled: true,
+    priority: 15,
+    description: 'AWS 대학생 그룹',
+    tags: ['aws', 'cloud', 'university'],
+    expectedCandidates: 150,
+  },
+
+  // SIPE
+  {
+    name: 'sipe-team',
+    displayName: 'SIPE',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.IT_CLUB,
+    url: 'https://github.com/sipe-team',
+    config: { orgName: 'sipe-team' },
+    enabled: true,
+    priority: 10,
+    description: '개발자들이 함께 교류하며 성장하는 IT 커뮤니티',
+    tags: ['side-project', 'it-club', 'study'],
+    expectedCandidates: 100,
+  },
+];
+
+export const UNIVERSITY_CLUB_SOURCES: CrawlSourceConfig[] = [
+  {
+    name: 'sparcs-kaist',
+    displayName: 'SPARCS (KAIST)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNIVERSITY_CLUB,
+    url: 'https://github.com/sparcs-kaist',
+    config: { orgName: 'sparcs-kaist' },
+    enabled: true,
+    priority: 5,
+    description: 'KAIST 개발 동아리',
+    tags: ['kaist', 'university', 'elite'],
+    expectedCandidates: 200,
+  },
+  {
+    name: 'wafflestudio',
+    displayName: '와플스튜디오 (서울대)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNIVERSITY_CLUB,
+    url: 'https://github.com/wafflestudio',
+    config: { orgName: 'wafflestudio' },
+    enabled: true,
+    priority: 5,
+    description: '서울대학교 개발 동아리',
+    tags: ['snu', 'university', 'elite'],
+    expectedCandidates: 300,
+  },
+  {
+    name: 'snulife',
+    displayName: 'SNULIFE (서울대)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNIVERSITY_CLUB,
+    url: 'https://github.com/snulife',
+    config: { orgName: 'snulife' },
+    enabled: true,
+    priority: 15,
+    tags: ['snu', 'university'],
+    expectedCandidates: 50,
+  },
+  {
+    name: 'poapper',
+    displayName: 'PoApper (포항공대)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNIVERSITY_CLUB,
+    url: 'https://github.com/PoApper',
+    config: { orgName: 'PoApper' },
+    enabled: true,
+    priority: 10,
+    description: 'POSTECH 개발 동아리',
+    tags: ['postech', 'university', 'elite'],
+    expectedCandidates: 100,
+  },
+  {
+    name: 'poolc',
+    displayName: 'PoolC (연세대)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNIVERSITY_CLUB,
+    url: 'https://github.com/PoolC',
+    config: { orgName: 'PoolC' },
+    enabled: true,
+    priority: 10,
+    description: '연세대학교 프로그래밍 동아리',
+    tags: ['yonsei', 'university'],
+    expectedCandidates: 100,
+  },
+  {
+    name: 'bacchus-snu',
+    displayName: 'Bacchus (서울대)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNIVERSITY_CLUB,
+    url: 'https://github.com/bacchus-snu',
+    config: { orgName: 'bacchus-snu' },
+    enabled: true,
+    priority: 15,
+    description: '서울대학교 컴퓨터공학부 시스템관리자 모임',
+    tags: ['snu', 'university', 'system'],
+    expectedCandidates: 50,
+  },
+];
+
+/**
+ * ============================================
+ * 기업 소스
+ * ============================================
+ */
+export const TECH_GIANT_SOURCES: CrawlSourceConfig[] = [
+  {
+    name: 'naver',
+    displayName: '네이버',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.TECH_GIANT,
+    url: 'https://github.com/naver',
+    config: { orgName: 'naver' },
+    enabled: true,
+    priority: 20,
+    description: '네이버 오픈소스',
+    tags: ['naver', 'search', 'portal'],
+    expectedCandidates: 300,
+  },
+  {
+    name: 'kakao',
+    displayName: '카카오',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.TECH_GIANT,
+    url: 'https://github.com/kakao',
+    config: { orgName: 'kakao' },
+    enabled: true,
+    priority: 20,
+    description: '카카오 오픈소스',
+    tags: ['kakao', 'messaging', 'fintech'],
+    expectedCandidates: 200,
+  },
+  {
+    name: 'line',
+    displayName: 'LINE',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.TECH_GIANT,
+    url: 'https://github.com/line',
+    config: { orgName: 'line' },
+    enabled: true,
+    priority: 20,
+    description: 'LINE Corporation 오픈소스',
+    tags: ['line', 'messaging', 'japan'],
+    expectedCandidates: 200,
+  },
+  {
+    name: 'coupang',
+    displayName: '쿠팡',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.TECH_GIANT,
+    url: 'https://github.com/coupang',
+    config: { orgName: 'coupang' },
+    enabled: true,
+    priority: 20,
+    description: '쿠팡 오픈소스',
+    tags: ['coupang', 'ecommerce', 'logistics'],
+    expectedCandidates: 100,
+  },
+  {
+    name: 'navercorp',
+    displayName: '네이버 (Corp)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.TECH_GIANT,
+    url: 'https://github.com/navercorp',
+    config: { orgName: 'navercorp' },
+    enabled: true,
+    priority: 20,
+    tags: ['naver', 'corporation'],
+    expectedCandidates: 100,
+  },
+];
+
+export const UNICORN_SOURCES: CrawlSourceConfig[] = [
+  {
+    name: 'toss',
+    displayName: '토스 (비바리퍼블리카)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNICORN,
+    url: 'https://github.com/toss',
+    config: { orgName: 'toss' },
+    enabled: true,
+    priority: 15,
+    description: '토스 오픈소스',
+    tags: ['toss', 'fintech', 'unicorn'],
+    expectedCandidates: 150,
+  },
+  {
+    name: 'daangn',
+    displayName: '당근마켓',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNICORN,
+    url: 'https://github.com/daangn',
+    config: { orgName: 'daangn' },
+    enabled: true,
+    priority: 15,
+    description: '당근마켓 오픈소스',
+    tags: ['daangn', 'marketplace', 'unicorn'],
+    expectedCandidates: 100,
+  },
+  {
+    name: 'woowabros',
+    displayName: '우아한형제들',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNICORN,
+    url: 'https://github.com/woowabros',
+    config: { orgName: 'woowabros' },
+    enabled: true,
+    priority: 15,
+    description: '배달의민족 운영사',
+    tags: ['woowahan', 'delivery', 'unicorn'],
+    expectedCandidates: 150,
+  },
+  {
+    name: 'banksalad',
+    displayName: '뱅크샐러드',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNICORN,
+    url: 'https://github.com/banksalad',
+    config: { orgName: 'banksalad' },
+    enabled: true,
+    priority: 15,
+    description: '뱅크샐러드 오픈소스',
+    tags: ['banksalad', 'fintech'],
+    expectedCandidates: 80,
+  },
+  {
+    name: 'yogiyo',
+    displayName: '요기요',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.UNICORN,
+    url: 'https://github.com/yogiyo',
+    config: { orgName: 'yogiyo' },
+    enabled: true,
+    priority: 15,
+    description: '요기요 오픈소스',
+    tags: ['yogiyo', 'delivery'],
+    expectedCandidates: 50,
+  },
+];
+
+export const STARTUP_SOURCES: CrawlSourceConfig[] = [
+  {
+    name: 'bucketplace',
+    displayName: '오늘의집 (버킷플레이스)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.STARTUP,
+    url: 'https://github.com/bucketplace',
+    config: { orgName: 'bucketplace' },
+    enabled: true,
+    priority: 20,
+    description: '인테리어 플랫폼 오늘의집',
+    tags: ['bucketplace', 'interior', 'platform'],
+    expectedCandidates: 80,
+  },
+
+  {
+    name: 'hyperconnect',
+    displayName: '하이퍼커넥트',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.STARTUP,
+    url: 'https://github.com/hyperconnect',
+    config: { orgName: 'hyperconnect' },
+    enabled: true,
+    priority: 20,
+    description: '아자르 운영사',
+    tags: ['hyperconnect', 'webrtc', 'social'],
+    expectedCandidates: 60,
+  },
+  {
+    name: 'sendbird',
+    displayName: 'Sendbird',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.STARTUP,
+    url: 'https://github.com/sendbird',
+    config: { orgName: 'sendbird' },
+    enabled: true,
+    priority: 20,
+    description: '채팅/메시징 API 플랫폼',
+    tags: ['sendbird', 'chat', 'api', 'global'],
+    expectedCandidates: 50,
+  },
+  {
+    name: 'channel-io',
+    displayName: '채널톡',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.STARTUP,
+    url: 'https://github.com/channel-io',
+    config: { orgName: 'channel-io' },
+    enabled: true,
+    priority: 25, // 자사는 낮은 우선순위
+    description: '고객 메시징 플랫폼',
+    tags: ['channel', 'messaging', 'crm'],
+    expectedCandidates: 30,
+  },
+  {
+    name: 'ab180',
+    displayName: 'AB180 (에어브릿지)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.STARTUP,
+    url: 'https://github.com/ab180',
+    config: { orgName: 'ab180' },
+    enabled: true,
+    priority: 20,
+    description: '모바일 어트리뷰션 플랫폼',
+    tags: ['ab180', 'analytics', 'mobile'],
+    expectedCandidates: 40,
+  },
+  {
+    name: 'dramancompany',
+    displayName: '리멤버 (드라마앤컴퍼니)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.STARTUP,
+    url: 'https://github.com/dramancompany',
+    config: { orgName: 'dramancompany' },
+    enabled: true,
+    priority: 20,
+    description: '명함 관리 앱 리멤버',
+    tags: ['remember', 'business', 'networking'],
+    expectedCandidates: 40,
+  },
+
+  {
+    name: 'mathpresso',
+    displayName: '콴다 (매스프레소)',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.STARTUP,
+    url: 'https://github.com/mathpresso',
+    config: { orgName: 'mathpresso' },
+    enabled: true,
+    priority: 20,
+    description: 'AI 교육 플랫폼 콴다',
+    tags: ['qanda', 'education', 'ai'],
+    expectedCandidates: 40,
+  },
+  {
+    name: 'ridi',
+    displayName: '리디',
+    type: SourceType.GITHUB_ORG,
+    category: SourceCategory.STARTUP,
+    url: 'https://github.com/ridi',
+    config: { orgName: 'ridi' },
+    enabled: true,
+    priority: 20,
+    description: '전자책/웹툰 플랫폼',
+    tags: ['ridi', 'ebook', 'webtoon'],
+    expectedCandidates: 50,
+  },
+];
+
+/**
+ * ============================================
+ * 기타 소스
+ * ============================================
+ */
+export const OPEN_SOURCE_SOURCES: CrawlSourceConfig[] = [
+  {
+    name: 'brave-people-dev-event',
+    displayName: 'Dev-Event 컨트리뷰터',
+    type: SourceType.DEV_EVENT,
+    category: SourceCategory.OPEN_SOURCE,
+    url: 'https://github.com/brave-people/Dev-Event',
+    config: { repoPath: 'brave-people/Dev-Event' },
+    enabled: true,
+    priority: 10,
+    description: '개발자 행사 정보 저장소 기여자',
+    tags: ['open-source', 'community', 'event'],
+    expectedCandidates: 100,
+  },
+];
+
+/**
+ * ============================================
+ * 기술 블로그 소스
+ * ============================================
+ */
+export const TECH_BLOG_SOURCES: CrawlSourceConfig[] = [
+  {
+    name: 'techblog-woowahan',
+    displayName: '우아한형제들 기술블로그',
+    type: SourceType.TECH_BLOG,
+    category: SourceCategory.TECH_BLOG,
+    url: 'https://techblog.woowahan.com',
+    config: { blogKey: 'woowahan' },
+    enabled: true,
+    priority: 15,
+    description: '배달의민족 기술 블로그',
+    tags: ['woowahan', 'delivery', 'tech-blog'],
+    expectedCandidates: 50,
+  },
+  {
+    name: 'techblog-kakao',
+    displayName: '카카오테크 기술블로그',
+    type: SourceType.TECH_BLOG,
+    category: SourceCategory.TECH_BLOG,
+    url: 'https://tech.kakao.com',
+    config: { blogKey: 'kakao' },
+    enabled: true,
+    priority: 15,
+    description: '카카오 기술 블로그',
+    tags: ['kakao', 'messaging', 'tech-blog'],
+    expectedCandidates: 80,
+  },
+  {
+    name: 'techblog-toss',
+    displayName: '토스 기술 블로그',
+    type: SourceType.TECH_BLOG,
+    category: SourceCategory.TECH_BLOG,
+    url: 'https://toss.tech',
+    config: { blogKey: 'toss' },
+    enabled: true,
+    priority: 15,
+    description: '토스 기술 블로그',
+    tags: ['toss', 'fintech', 'tech-blog'],
+    expectedCandidates: 40,
+  },
+  {
+    name: 'techblog-naver-d2',
+    displayName: '네이버 D2',
+    type: SourceType.TECH_BLOG,
+    category: SourceCategory.TECH_BLOG,
+    url: 'https://d2.naver.com',
+    config: { blogKey: 'naver-d2' },
+    enabled: true,
+    priority: 15,
+    description: '네이버 D2 기술 블로그',
+    tags: ['naver', 'search', 'tech-blog'],
+    expectedCandidates: 60,
+  },
+  {
+    name: 'techblog-line',
+    displayName: 'LINE Engineering',
+    type: SourceType.TECH_BLOG,
+    category: SourceCategory.TECH_BLOG,
+    url: 'https://engineering.linecorp.com/ko',
+    config: { blogKey: 'line' },
+    enabled: true,
+    priority: 15,
+    description: 'LINE 기술 블로그',
+    tags: ['line', 'messaging', 'tech-blog'],
+    expectedCandidates: 50,
+  },
+  {
+    name: 'techblog-daangn',
+    displayName: '당근마켓 기술 블로그',
+    type: SourceType.TECH_BLOG,
+    category: SourceCategory.TECH_BLOG,
+    url: 'https://medium.com/daangn',
+    config: { blogKey: 'daangn' },
+    enabled: true,
+    priority: 15,
+    description: '당근마켓 기술 블로그 (Medium)',
+    tags: ['daangn', 'marketplace', 'tech-blog'],
+    expectedCandidates: 30,
+  },
+  {
+    name: 'techblog-banksalad',
+    displayName: '뱅크샐러드 기술 블로그',
+    type: SourceType.TECH_BLOG,
+    category: SourceCategory.TECH_BLOG,
+    url: 'https://blog.banksalad.com',
+    config: { blogKey: 'banksalad' },
+    enabled: true,
+    priority: 15,
+    description: '뱅크샐러드 기술 블로그',
+    tags: ['banksalad', 'fintech', 'tech-blog'],
+    expectedCandidates: 25,
+  },
+];
+
+/**
+ * ============================================
+ * 전체 소스 통합 및 헬퍼 함수
+ * ============================================
+ */
+export const ALL_CRAWL_SOURCES: CrawlSourceConfig[] = [
+  ...BOOTCAMP_SOURCES,
+  ...UNIVERSITY_PROGRAM_SOURCES,
+  ...IT_CLUB_SOURCES,
+  ...UNIVERSITY_CLUB_SOURCES,
+  ...TECH_GIANT_SOURCES,
+  ...UNICORN_SOURCES,
+  ...STARTUP_SOURCES,
+  ...OPEN_SOURCE_SOURCES,
+  ...TECH_BLOG_SOURCES,
+];
+
+/**
+ * 활성화된 소스만 가져오기
+ */
+export function getEnabledSources(): CrawlSourceConfig[] {
+  return ALL_CRAWL_SOURCES.filter((s) => s.enabled);
+}
+
+/**
+ * 카테고리별 소스 가져오기
+ */
+export function getSourcesByCategory(
+  category: SourceCategory,
+): CrawlSourceConfig[] {
+  return ALL_CRAWL_SOURCES.filter((s) => s.category === category && s.enabled);
+}
+
+/**
+ * 타입별 소스 가져오기
+ */
+export function getSourcesByType(type: SourceType): CrawlSourceConfig[] {
+  return ALL_CRAWL_SOURCES.filter((s) => s.type === type && s.enabled);
+}
+
+/**
+ * 우선순위 순으로 정렬된 소스 가져오기
+ */
+export function getSourcesByPriority(): CrawlSourceConfig[] {
+  return getEnabledSources().sort((a, b) => a.priority - b.priority);
+}
+
+/**
+ * 태그로 소스 검색
+ */
+export function getSourcesByTag(tag: string): CrawlSourceConfig[] {
+  return ALL_CRAWL_SOURCES.filter(
+    (s) => s.enabled && s.tags?.includes(tag.toLowerCase()),
+  );
+}
+
+/**
+ * 예상 총 후보자 수 계산
+ */
+export function getExpectedTotalCandidates(): number {
+  return getEnabledSources().reduce(
+    (sum, s) => sum + (s.expectedCandidates || 0),
+    0,
+  );
+}
+
+/**
+ * 소스 통계 요약
+ */
+export function getSourcesSummary(): {
+  total: number;
+  enabled: number;
+  byCategory: Record<SourceCategory, number>;
+  byType: Record<string, number>;
+  expectedCandidates: number;
+} {
+  const enabled = getEnabledSources();
+
+  const byCategory = {} as Record<SourceCategory, number>;
+  const byType = {} as Record<string, number>;
+
+  for (const source of enabled) {
+    byCategory[source.category] = (byCategory[source.category] || 0) + 1;
+    byType[source.type] = (byType[source.type] || 0) + 1;
+  }
+
+  return {
+    total: ALL_CRAWL_SOURCES.length,
+    enabled: enabled.length,
+    byCategory,
+    byType,
+    expectedCandidates: getExpectedTotalCandidates(),
+  };
+}
+
