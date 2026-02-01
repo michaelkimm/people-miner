@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Candidate {
+  id             String  @id @default(cuid())
+  githubUsername String  @unique
+  githubId       Int?
+  name           String?
+  email          String?
+  bio            String?
+  company        String?
+  location       String?
+  blog           String?
+  avatarUrl      String?
+
+  publicRepos  Int @default(0)
+  followers    Int @default(0)
+  following    Int @default(0)
+  totalCommits Int @default(0)
+
+  readabilityScore    Float?
+  problemSolvingScore Float?
+  cleanCodeScore      Float?
+  solvedAcScore       Float?
+  totalScore          Float?
+
+  // Deep Dive signals
+  hasTilRepo           Boolean @default(false)
+  tilRepoCount         Int     @default(0)
+  longestProjectMonths Int     @default(0)
+
+  // Rejection learning fields
+  status    CandidateStatus @default(ACTIVE)
+  feedbacks CandidateFeedback[]
+
+  sources          CandidateSource[]
+  repositories     Repository[]
+  solvedAcProfile  SolvedAcProfile?
+  ossContributions OSSContribution[]
+
+  crawledAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  scoredAt       DateTime?
+  lastActivityAt DateTime?
+
+  @@index([totalScore(sort: Desc)])
+  @@index([crawledAt])
+  @@index([status])
+  @@index([lastActivityAt(sort: Desc)])
+  @@map("candidates")
+}
+
+// Candidate status for rejection learning
+enum CandidateStatus {
+  ACTIVE
+  REJECTED
+  SHORTLISTED
+  CONTACTED
+}
+
+model CandidateSource {
+  id           String     @id @default(cuid())
+  candidateId  String
+  candidate    Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  sourceType   SourceType
+  sourceName   String
+  sourceUrl    String?
+  discoveredAt DateTime   @default(now())
+
+  @@unique([candidateId, sourceType, sourceName])
+  @@map("candidate_sources")
+}
+
+enum SourceType {
+  GITHUB_ORG
+  TECH_BLOG
+  PERSONAL_BLOG
+  COMMUNITY
+  DEV_EVENT
+}
+
+model Repository {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  name        String
+  fullName    String
+  description String?
+  language    String?
+  starCount   Int       @default(0)
+  forkCount   Int       @default(0)
+  url         String
+  pushedAt    DateTime?
+  analyzedAt  DateTime?
+
+  analysis RepoAnalysis?
+
+  @@unique([candidateId, fullName])
+  @@map("repositories")
+}
+
+model CrawlSource {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  type        SourceType
+  url         String
+  config      Json?
+  enabled     Boolean    @default(true)
+  lastCrawled DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@map("crawl_sources")
+}
+
+model CrawlJob {
+  id              String    @id @default(cuid())
+  sourceId        String?
+  status          JobStatus @default(PENDING)
+  totalTasks      Int       @default(0)
+  completedTasks  Int       @default(0)
+  candidatesFound Int       @default(0)
+  candidatesNew   Int       @default(0)
+  error           String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("crawl_jobs")
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model SolvedAcProfile {
+  id          String    @id @default(cuid())
+  candidateId String    @unique
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  handle          String
+  tier            Int
+  tierName        String
+  rating          Int
+  solvedCount     Int
+  voteCount       Int     @default(0)
+  classLevel      Int     @default(0)
+  classDecoration String?
+  maxStreak       Int     @default(0)
+  rank            Int?
+  tagStats        Json?
+
+  fetchedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tier(sort: Desc)])
+  @@index([rating(sort: Desc)])
+  @@map("solved_ac_profiles")
+}
+
+model RepoAnalysis {
+  id           String     @id @default(cuid())
+  repositoryId String     @unique
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  hasTests        Boolean @default(false)
+  testFramework   String?
+  hasCI           Boolean @default(false)
+  ciPlatform      String?
+  hasReadme       Boolean @default(false)
+  hasContributing Boolean @default(false)
+  hasLicense      Boolean @default(false)
+  hasDocs         Boolean @default(false)
+  hasLinter       Boolean @default(false)
+  hasTypeCheck    Boolean @default(false)
+  hasDockerfile   Boolean @default(false)
+
+  conventionalCommitRatio Float?
+  avgCommitMessageLength  Int?
+  totalCommits            Int    @default(0)
+
+  analyzedAt DateTime @default(now())
+
+  @@map("repo_analyses")
+}
+
+model OSSContribution {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  externalRepo  String
+  prTitle       String
+  prUrl         String    @unique
+  prNumber      Int
+  mergedAt      DateTime?
+  state         String
+  additions     Int       @default(0)
+  deletions     Int       @default(0)
+  isSignificant Boolean   @default(false)
+
+  discoveredAt DateTime @default(now())
+
+  @@index([candidateId])
+  @@map("oss_contributions")
+}
+
+// ==========================================
+// Rejection Learning Models
+// ==========================================
+
+// Feedback action types
+enum FeedbackAction {
+  REJECT
+  SHORTLIST
+  UNDO
+}
+
+// Rejection reasons (required when rejecting)
+enum RejectionReason {
+  LOW_ACTIVITY        // 활동량 부족
+  WRONG_TECH_STACK    // 기술 스택 불일치
+  JUNIOR_LEVEL        // 경력 수준 부족
+  LOW_SCORE           // 점수 낮음
+  WRONG_LOCATION      // 위치 부적합
+  NO_RECENT_ACTIVITY  // 최근 활동 없음
+  OTHER               // 기타
+}
+
+// Candidate feedback history
+model CandidateFeedback {
+  id          String          @id @default(cuid())
+  candidateId String
+  candidate   Candidate       @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  action      FeedbackAction
+  reason      RejectionReason?
+  notes       String?
+
+  // Snapshot of candidate features at rejection time (for ML learning)
+  snapshot    Json?
+
+  createdAt   DateTime        @default(now())
+
+  @@index([action])
+  @@index([reason])
+  @@index([candidateId])
+  @@index([createdAt])
+  @@map("candidate_feedbacks")
+}
+
+// Auto-generated or manual rejection rules
+model RejectionRule {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+
+  // Rule conditions as JSON array: [{ field, operator, value }]
+  // Example: [{ "field": "totalScore", "operator": "<", "value": 35 }]
+  conditions    Json
+
+  confidence    Float    @default(0)   // 0-1, how confident this rule is
+  hitCount      Int      @default(0)   // Number of rejections matching this rule
+  enabled       Boolean  @default(true)
+  autoGenerated Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([enabled])
+  @@index([confidence(sort: Desc)])
+  @@map("rejection_rules")
+}

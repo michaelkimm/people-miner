@@ -1,0 +1,63 @@
+--- a/github-org.crawler.ts
++++ b/github-org.crawler.ts
+@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
+ import { GithubService } from '../../github/github.service';
+ import { SourceType } from '@prisma/client';
+ import { TechStackFilterService } from '../../filter/tech-stack-filter.service';
++import { TIL_REPO_PATTERNS, TIL_FALSE_POSITIVE_PATTERNS } from '../../scoring/constants/til-detection.constants';
+ 
+ @Injectable()
+ export class GithubOrgCrawler {
+@@ -65,6 +66,12 @@ export class GithubOrgCrawler {
+         .map((r) => new Date(r.pushed_at!))
+         .sort((a, b) => b.getTime() - a.getTime())[0] || null;
+ 
++      // Detect TIL repositories
++      const tilInfo = this.detectTilRepos(repos);
++
++      // Calculate longest project duration
++      const longestProjectMonths = this.calculateLongestProjectMonths(repos);
++
+       const candidate = await this.prisma.candidate.create({
+         data: {
+           githubUsername: userDetails.login,
+@@ -80,6 +87,9 @@ export class GithubOrgCrawler {
+           followers: userDetails.followers,
+           following: userDetails.following,
+           lastActivityAt,
++          hasTilRepo: tilInfo.hasTil,
++          tilRepoCount: tilInfo.count,
++          longestProjectMonths,
+           sources: {
+             create: {
+               sourceType: SourceType.GITHUB_ORG,
+@@ -113,6 +123,38 @@ export class GithubOrgCrawler {
+     return { found: members.length, new: newCount };
+   }
+ 
++  private detectTilRepos(repos: any[]): { hasTil: boolean; count: number } {
++    const tilRepos = repos.filter(repo => {
++      const name = repo.name;
++      // False positive check
++      if (TIL_FALSE_POSITIVE_PATTERNS.some(p => p.test(name))) return false;
++      // TIL pattern matching
++      return TIL_REPO_PATTERNS.some(p => p.test(name));
++    });
++    return { hasTil: tilRepos.length > 0, count: tilRepos.length };
++  }
++
++  private calculateLongestProjectMonths(repos: any[]): number {
++    let longest = 0;
++    for (const repo of repos) {
++      if (!repo.created_at || !repo.pushed_at) continue;
++      const created = new Date(repo.created_at);
++      const pushed = new Date(repo.pushed_at);
++      const months = (pushed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24 * 30);
++      if (months > longest) longest = Math.floor(months);
++    }
++    return longest;
++  }
++
+   private async ensureSourceExists(
+     candidateId: string,
+     sourceName: string,
